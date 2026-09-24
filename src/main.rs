@@ -1,3 +1,4 @@
+pub mod backends;
 pub mod config;
 
 use clap::{Parser, Subcommand};
@@ -183,29 +184,15 @@ fn main() {
         }
     }
 
-    // Pre-accept Claude's trust-this-folder dialog for the work dir
-    let claude_config_path = directories::BaseDirs::new().unwrap().home_dir().join(".claude.json");
-    if let Some(mut claude_config) = std::fs::read_to_string(&claude_config_path)
-        .ok()
-        .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
-    {
-        claude_config["projects"][work_dir.to_string_lossy().as_ref()]["hasTrustDialogAccepted"] = true.into();
-        let temp_path = claude_config_path.with_extension("json.aw-tmp");
-        std::fs::write(&temp_path, serde_json::to_string_pretty(&claude_config).unwrap()).unwrap();
-        std::fs::rename(&temp_path, &claude_config_path).unwrap();
-    }
-
-    // Prefer claude code, fall back to opencode if it isn't installed.
-    let quiet = |name: &str, arg: &str| {
-        run(Process::new(name).arg(arg).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()))
-    };
-    let agent_command = if quiet("claude", "--version") {
-        "claude -c --permission-mode auto || claude --permission-mode auto"
-    } else if quiet("opencode", "--version") {
-        "opencode -c --auto || opencode --auto"
-    } else {
-        fail("Neither claude nor opencode is installed");
-    };
+    // Use the first configured harness that is actually installed
+    let (harness, backend) = config
+        .harnesses
+        .iter()
+        .map(|harness| (harness, harness.backend()))
+        .find(|(_, backend)| backend.is_installed())
+        .unwrap_or_else(|| fail(format!("None of the configured harnesses are installed: {:?}", config.harnesses)));
+    log::debug!("Using harness: {:?}", harness);
+    backend.prepare(&work_dir);
 
     // Spawn the session if it doesn't already exist
     if !run(Process::new("tmux").args(["has-session", "-t", &session]).stderr(std::process::Stdio::null())) {
@@ -215,10 +202,8 @@ fn main() {
             .map(|(key, value)| format!("{}={}", key, value))
             .collect();
 
-        // Teach OpenCode how to talk to cmux
-        if !session_env.is_empty() {
-            session_env.push("OPENCODE_CMUX_TRANSPORT=cli".to_string());
-        }
+        // Let the harness add its own variables
+        backend.extend_env(&mut session_env);
 
         // Launch the tmux session
         let mut new_session = Process::new("tmux");
@@ -226,7 +211,7 @@ fn main() {
         for var in &session_env {
             new_session.args(["-e", var]);
         }
-        if !run(new_session.arg(agent_command)) {
+        if !run(new_session.arg(backend.command())) {
             fail(format!("Failed to create tmux session {}", session));
         }
 

@@ -1,3 +1,4 @@
+use crate::backends::Harness;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
@@ -16,6 +17,10 @@ pub struct Config {
     /// A static list of additional hard-coded repository paths
     pub extra_repos: Vec<PathBuf>,
 
+    /// Agent harnesses to try, in order of preference. The first installed one is used
+    #[serde(default = "default_harnesses")]
+    pub harnesses: Vec<Harness>,
+
 }
 
 impl Default for Config {
@@ -24,6 +29,7 @@ impl Default for Config {
             max_session_idle_time: default_max_session_idle_time(),
             project_dirs: default_project_dirs(),
             extra_repos: Vec::new(),
+            harnesses: default_harnesses(),
         }
     }
 }
@@ -34,6 +40,10 @@ fn default_max_session_idle_time() -> u64 {
 
 fn default_project_dirs() -> Vec<PathBuf> {
     vec![PathBuf::from("~/projects")]
+}
+
+fn default_harnesses() -> Vec<Harness> {
+    vec![Harness::Claude, Harness::Opencode]
 }
 
 impl Config {
