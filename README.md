@@ -10,3 +10,9 @@ I designed `aw` to help me orchestrate large numbers of "what if" scenarios acro
 - Streamligned command-line argument parsing to quickly open projects from various dirs across my system
 - Some Tmux trickery to make sessions easy to transfer to-and-from my phone while on the go
 
+## Contributions
+
+This repository is a public push-mirror of a segment of my personal projects monorepo. As such, pull requests are not accepted here.
+
+If you would like to contribute a patch, please email me at the address [on my website](https://ewpratten.com).
+
