@@ -1,7 +1,10 @@
 pub mod backends;
+pub mod complete;
 pub mod config;
+pub mod projects;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::engine::ArgValueCandidates;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command as Process;
@@ -13,9 +16,11 @@ struct Args {
     command: Option<Command>,
 
     /// Project name. Bare `repo`, or `org/repo` format accepted. Current directory if omitted
+    #[arg(add = ArgValueCandidates::new(complete::project_candidates))]
     project: Option<String>,
 
     /// Spin up a disposable jj workspace for this context
+    #[arg(add = ArgValueCandidates::new(complete::context_candidates))]
     context_id: Option<String>,
 
     #[command(flatten)]
@@ -47,6 +52,8 @@ fn find_jj_root(dir: &Path) -> Option<PathBuf> {
 }
 
 fn main() {
+    // Answer shell completion requests (`COMPLETE=zsh aw`) before anything else
+    clap_complete::CompleteEnv::with_factory(Args::command).complete();
     let args = Args::parse();
 
     // Set up logging
@@ -109,65 +116,19 @@ fn main() {
     });
 
     // Resolve the project name into a directory
-    let (rel, project_dir) = if input.contains('/') {
-        config
-            .project_dirs
-            .iter()
-            .map(|dir| dir.join(&input))
-            .find(|path| path.is_dir())
-            .map(|path| (input.clone(), path))
-            .unwrap_or_else(|| fail(format!("No such project: {}", input)))
-    } else {
-        let mut matches: Vec<(String, PathBuf)> = Vec::new();
-
-        // Hard-coded repos, matched by directory name
-        for repo in &config.extra_repos {
-            if repo.file_name().is_some_and(|name| name == input.as_str()) {
-                matches.push((input.clone(), repo.clone()));
-            }
-        }
-
-        // Repos directly in the project dir, then org/repo one directory deeper
-        for dir in &config.project_dirs {
-            if dir.join(&input).join(".jj").is_dir() {
-                matches.push((input.clone(), dir.join(&input)));
-            }
-            if let Ok(entries) = std::fs::read_dir(dir) {
-                let mut entries: Vec<_> = entries.flatten().map(|entry| entry.path()).collect();
-                entries.sort();
-                for org in entries {
-                    if org.join(&input).join(".jj").is_dir() {
-                        matches.push((format!("{}/{}", org.file_name().unwrap().to_string_lossy(), input), org.join(&input)));
-                    }
-                }
-            }
-        }
-
-        match matches.len() {
-            0 => fail(format!(
-                "No jj repo named '{}' found in extra repos or under {} (searched top-level and one level deep)",
-                input,
-                config.project_dirs.iter().map(|dir| dir.display().to_string()).collect::<Vec<_>>().join(", ")
-            )),
-            _ => {
-                log::warn!("Multiple directories matched '{}'. Using the first match.", input);
-                matches.remove(0)
-            },
-        }
-    };
+    let (rel, project_dir) = projects::resolve(&config, &input).unwrap_or_else(|error| fail(error));
     if !project_dir.join(".jj").is_dir() {
         fail(format!("Not a jj repo: {}", project_dir.display()));
     }
 
     // A context id gets its own disposable jj workspace, so multiple contexts
     // for the same project can run side by side without stepping on each other
-    let rel_slug = rel.replace('/', "-");
-    let mut session = format!("aw-{}", rel_slug).replace('.', "-");
+    let mut session = projects::session_name(&rel, None);
     let mut work_dir = project_dir.clone();
     if let Some(context_id) = &args.context_id {
         let context_id = context_id.replace(['/', '.'], "-");
-        session = format!("{}-{}", session, context_id);
-        work_dir = cache_dir.join(&rel_slug).join(&context_id);
+        session = projects::session_name(&rel, Some(&context_id));
+        work_dir = cache_dir.join(rel.replace('/', "-")).join(&context_id);
 
         if !work_dir.is_dir() {
             std::fs::create_dir_all(work_dir.parent().unwrap()).unwrap();

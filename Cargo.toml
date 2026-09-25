@@ -15,4 +15,5 @@ directories = "6.0.0"
 shellexpand = "3.1.2"
 toml = "1.1.6"
 serde_json = { version = "1", features = ["preserve_order"] }
+clap_complete = { version = "4.6.11", features = ["unstable-dynamic"] }
 
