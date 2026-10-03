@@ -172,7 +172,7 @@ fn main() {
         for var in &session_env {
             new_session.args(["-e", var]);
         }
-        if !run(new_session.arg(backend.command())) {
+        if !run(new_session.arg(backend.command(&session))) {
             fail(format!("Failed to create tmux session {}", session));
         }
 

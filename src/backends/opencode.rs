@@ -14,7 +14,7 @@ impl Backend for OpenCode {
         }
     }
 
-    fn command(&self) -> &'static str {
-        "opencode -c --auto || opencode --auto"
+    fn command(&self, _session: &str) -> String {
+        "opencode -c --auto || opencode --auto".to_string()
     }
 }

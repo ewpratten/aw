@@ -16,8 +16,8 @@ pub trait Backend {
     /// Add any harness-specific variables to the tmux session environment
     fn extend_env(&self, _session_env: &mut Vec<String>) {}
 
-    /// Shell command used to launch the harness
-    fn command(&self) -> &'static str;
+    /// Shell command used to launch the harness inside of the named session
+    fn command(&self, session: &str) -> String;
 }
 
 /// Harnesses that can be listed in the config
