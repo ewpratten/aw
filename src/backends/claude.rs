@@ -22,9 +22,12 @@ impl Backend for Claude {
         }
     }
 
-    fn command(&self, session: &str) -> String {
+    fn command(&self, session: &str, prompt: Option<&str>) -> String {
         // Name the Remote Control session after the aw session so it's easy to find from other devices
         let flags = format!("--permission-mode auto --remote-control '{}'", session);
-        format!("claude -c {flags} || claude {flags}")
+        match prompt {
+            Some(prompt) => format!("claude {flags} {}", super::shell_quote(prompt)),
+            None => format!("claude -c {flags} || claude {flags}"),
+        }
     }
 }

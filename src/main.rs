@@ -23,6 +23,10 @@ struct Args {
     #[arg(add = ArgValueCandidates::new(complete::context_candidates))]
     context_id: Option<String>,
 
+    /// Initial prompt to hand the harness. Ignored if the session already exists
+    #[arg(long)]
+    prompt: Option<String>,
+
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity<clap_verbosity_flag::InfoLevel>,
 }
@@ -172,12 +176,14 @@ fn main() {
         for var in &session_env {
             new_session.args(["-e", var]);
         }
-        if !run(new_session.arg(backend.command(&session))) {
+        if !run(new_session.arg(backend.command(&session, args.prompt.as_deref()))) {
             fail(format!("Failed to create tmux session {}", session));
         }
 
         // Focus the pane running the agent
         run(Process::new("tmux").args(["select-pane", "-t", &format!("{}:", session)]));
+    } else if args.prompt.is_some() {
+        log::warn!("Session {} already exists, ignoring --prompt", session);
     }
 
     // Various QoL settings for tmux

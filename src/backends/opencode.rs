@@ -14,7 +14,10 @@ impl Backend for OpenCode {
         }
     }
 
-    fn command(&self, _session: &str) -> String {
-        "opencode -c --auto || opencode --auto".to_string()
+    fn command(&self, _session: &str, prompt: Option<&str>) -> String {
+        match prompt {
+            Some(prompt) => format!("opencode --auto --prompt {}", super::shell_quote(prompt)),
+            None => "opencode -c --auto || opencode --auto".to_string(),
+        }
     }
 }

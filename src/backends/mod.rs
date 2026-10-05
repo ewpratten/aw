@@ -16,8 +16,9 @@ pub trait Backend {
     /// Add any harness-specific variables to the tmux session environment
     fn extend_env(&self, _session_env: &mut Vec<String>) {}
 
-    /// Shell command used to launch the harness inside of the named session
-    fn command(&self, session: &str) -> String;
+    /// Shell command used to launch the harness inside of the named session,
+    /// optionally starting a fresh conversation with an initial prompt
+    fn command(&self, session: &str, prompt: Option<&str>) -> String;
 }
 
 /// Harnesses that can be listed in the config
@@ -47,4 +48,9 @@ fn responds_to_version(binary: &str) -> bool {
         .status()
         .map(|status| status.success())
         .unwrap_or(false)
+}
+
+/// Wrap a string in single quotes so it survives being passed through a shell
+fn shell_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\\''"))
 }
