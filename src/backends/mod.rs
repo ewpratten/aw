@@ -1,5 +1,6 @@
 mod claude;
 mod opencode;
+mod pi;
 
 use serde::Deserialize;
 use std::path::Path;
@@ -27,6 +28,7 @@ pub trait Backend {
 pub enum Harness {
     Claude,
     Opencode,
+    Pi,
 }
 
 impl Harness {
@@ -35,6 +37,7 @@ impl Harness {
         match self {
             Harness::Claude => Box::new(claude::Claude),
             Harness::Opencode => Box::new(opencode::OpenCode),
+            Harness::Pi => Box::new(pi::Pi),
         }
     }
 }

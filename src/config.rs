@@ -43,7 +43,7 @@ fn default_project_dirs() -> Vec<PathBuf> {
 }
 
 fn default_harnesses() -> Vec<Harness> {
-    vec![Harness::Claude, Harness::Opencode]
+    vec![Harness::Claude, Harness::Opencode, Harness::Pi]
 }
 
 impl Config {
