@@ -21,6 +21,9 @@ pub struct Config {
     #[serde(default = "default_harnesses")]
     pub harnesses: Vec<Harness>,
 
+    /// Don't expose sessions over Remote Control in harnesses that support it
+    pub disable_remote_control: bool,
+
 }
 
 impl Default for Config {
@@ -30,6 +33,7 @@ impl Default for Config {
             project_dirs: default_project_dirs(),
             extra_repos: Vec::new(),
             harnesses: default_harnesses(),
+            disable_remote_control: false,
         }
     }
 }

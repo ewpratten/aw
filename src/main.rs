@@ -153,7 +153,7 @@ fn main() {
     let (harness, backend) = config
         .harnesses
         .iter()
-        .map(|harness| (harness, harness.backend()))
+        .map(|harness| (harness, harness.backend(&config)))
         .find(|(_, backend)| backend.is_installed())
         .unwrap_or_else(|| fail(format!("None of the configured harnesses are installed: {:?}", config.harnesses)));
     log::debug!("Using harness: {:?}", harness);

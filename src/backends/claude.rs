@@ -1,7 +1,9 @@
 use super::Backend;
 use std::path::Path;
 
-pub struct Claude;
+pub struct Claude {
+    pub remote_control: bool,
+}
 
 impl Backend for Claude {
     fn is_installed(&self) -> bool {
@@ -24,7 +26,10 @@ impl Backend for Claude {
 
     fn command(&self, session: &str, prompt: Option<&str>) -> String {
         // Name the Remote Control session after the aw session so it's easy to find from other devices
-        let flags = format!("--permission-mode auto --remote-control '{}'", session);
+        let flags = match self.remote_control {
+            true => format!("--permission-mode auto --remote-control '{}'", session),
+            false => "--permission-mode auto".to_string(),
+        };
         match prompt {
             Some(prompt) => format!("claude {flags} {}", super::shell_quote(prompt)),
             None => format!("claude -c {flags} || claude {flags}"),

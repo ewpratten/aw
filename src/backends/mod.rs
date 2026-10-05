@@ -2,6 +2,7 @@ mod claude;
 mod opencode;
 mod pi;
 
+use crate::config::Config;
 use serde::Deserialize;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -33,9 +34,9 @@ pub enum Harness {
 
 impl Harness {
     /// Get the backend implementation for this harness
-    pub fn backend(&self) -> Box<dyn Backend> {
+    pub fn backend(&self, config: &Config) -> Box<dyn Backend> {
         match self {
-            Harness::Claude => Box::new(claude::Claude),
+            Harness::Claude => Box::new(claude::Claude { remote_control: !config.disable_remote_control }),
             Harness::Opencode => Box::new(opencode::OpenCode),
             Harness::Pi => Box::new(pi::Pi),
         }

@@ -22,6 +22,9 @@ project_dirs = ["~/projects", "~/src"]
 
 # If you have any repos that live outside of your usual work area, add them directly here
 extra_repos = ["/external/repo"]
+
+# Don't expose sessions over Remote Control (in harnesses that support it)
+disable_remote_control = true
 ```
 
 Then, if you wanted to start a new session called `my-idea` in `~/projects/my-repo`, you'd run:
