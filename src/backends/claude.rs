@@ -24,6 +24,19 @@ impl Backend for Claude {
         }
     }
 
+    fn extend_env(&self, session_env: &mut Vec<String>) {
+        // Pass through API/gateway settings so Claude can reach custom endpoints (like the work AIGW)
+        session_env.extend(
+            std::env::vars()
+                .filter(|(key, _)| {
+                    key.starts_with("ANTHROPIC_")
+                        || key.starts_with("CLAUDE_CODE_")
+                        || ["DISABLE_ERROR_REPORTING", "ENABLE_TOOL_SEARCH"].contains(&key.as_str())
+                })
+                .map(|(key, value)| format!("{}={}", key, value)),
+        );
+    }
+
     fn command(&self, session: &str, prompt: Option<&str>) -> String {
         // Name the Remote Control session after the aw session so it's easy to find from other devices
         let flags = match self.remote_control {
