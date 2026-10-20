@@ -27,6 +27,10 @@ struct Args {
     #[arg(long)]
     prompt: Option<String>,
 
+    /// Enable experimental agent teams (Claude only). Ignored if the session already exists
+    #[arg(long)]
+    team: bool,
+
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity<clap_verbosity_flag::InfoLevel>,
 }
@@ -153,10 +157,13 @@ fn main() {
     let (harness, backend) = config
         .harnesses
         .iter()
-        .map(|harness| (harness, harness.backend(&config)))
+        .map(|harness| (harness, harness.backend(&config, args.team)))
         .find(|(_, backend)| backend.is_installed())
         .unwrap_or_else(|| fail(format!("None of the configured harnesses are installed: {:?}", config.harnesses)));
     log::debug!("Using harness: {:?}", harness);
+    if args.team && !matches!(harness, backends::Harness::Claude) {
+        log::warn!("{:?} does not support agent teams, ignoring --team", harness);
+    }
     backend.prepare(&work_dir);
 
     // Spawn the session if it doesn't already exist
@@ -182,8 +189,13 @@ fn main() {
 
         // Focus the pane running the agent
         run(Process::new("tmux").args(["select-pane", "-t", &format!("{}:", session)]));
-    } else if args.prompt.is_some() {
-        log::warn!("Session {} already exists, ignoring --prompt", session);
+    } else {
+        if args.prompt.is_some() {
+            log::warn!("Session {} already exists, ignoring --prompt", session);
+        }
+        if args.team {
+            log::warn!("Session {} already exists, ignoring --team", session);
+        }
     }
 
     // Various QoL settings for tmux

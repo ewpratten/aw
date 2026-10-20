@@ -3,6 +3,7 @@ use std::path::Path;
 
 pub struct Claude {
     pub remote_control: bool,
+    pub agent_teams: bool,
 }
 
 impl Backend for Claude {
@@ -35,6 +36,11 @@ impl Backend for Claude {
                 })
                 .map(|(key, value)| format!("{}={}", key, value)),
         );
+
+        // Opt in to experimental agent teams when requested
+        if self.agent_teams {
+            session_env.push("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1".to_string());
+        }
     }
 
     fn command(&self, session: &str, prompt: Option<&str>) -> String {
