@@ -140,7 +140,8 @@ fn main() {
 
         if !work_dir.is_dir() {
             std::fs::create_dir_all(work_dir.parent().unwrap()).unwrap();
-            let steps: [&[&str]; 3] = [
+            let steps: [&[&str]; 4] = [
+                &["--quiet", "-R", project_dir.to_str().unwrap(), "workspace", "update-stale"],
                 &["-R", project_dir.to_str().unwrap(), "workspace", "add", work_dir.to_str().unwrap(), "--name", &context_id],
                 &["-R", work_dir.to_str().unwrap(), "git", "fetch"],
                 &["-R", work_dir.to_str().unwrap(), "rebase", "-d", "trunk()"],
