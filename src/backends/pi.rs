@@ -1,6 +1,8 @@
 use super::Backend;
 
-pub struct Pi;
+pub struct Pi {
+    pub binary: String,
+}
 
 impl Backend for Pi {
     fn is_installed(&self) -> bool {
@@ -10,9 +12,10 @@ impl Backend for Pi {
     fn command(&self, session: &str, prompt: Option<&str>) -> String {
         // Name the pi session after the aw session, and trust project-local files like we do for Claude
         let flags = format!("--approve --name '{}'", session);
+        let binary = super::shell_quote(&self.binary);
         match prompt {
-            Some(prompt) => format!("pi {flags} -- {}", super::shell_quote(prompt)),
-            None => format!("pi -c {flags} || pi {flags}"),
+            Some(prompt) => format!("{binary} {flags} -- {}", super::shell_quote(prompt)),
+            None => format!("{binary} -c {flags} || {binary} {flags}"),
         }
     }
 }

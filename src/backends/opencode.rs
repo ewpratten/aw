@@ -1,6 +1,8 @@
 use super::Backend;
 
-pub struct OpenCode;
+pub struct OpenCode {
+    pub binary: String,
+}
 
 impl Backend for OpenCode {
     fn is_installed(&self) -> bool {
@@ -15,9 +17,10 @@ impl Backend for OpenCode {
     }
 
     fn command(&self, _session: &str, prompt: Option<&str>) -> String {
+        let binary = super::shell_quote(&self.binary);
         match prompt {
-            Some(prompt) => format!("opencode --auto --prompt {}", super::shell_quote(prompt)),
-            None => "opencode -c --auto || opencode --auto".to_string(),
+            Some(prompt) => format!("{binary} --auto --prompt {}", super::shell_quote(prompt)),
+            None => format!("{binary} -c --auto || {binary} --auto"),
         }
     }
 }

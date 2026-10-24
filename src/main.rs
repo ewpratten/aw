@@ -31,6 +31,10 @@ struct Args {
     #[arg(long)]
     team: bool,
 
+    /// Override the binary used to launch the selected harness. Harness selection still checks the default binary
+    #[arg(long)]
+    binary: Option<String>,
+
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity<clap_verbosity_flag::InfoLevel>,
 }
@@ -158,7 +162,7 @@ fn main() {
     let (harness, backend) = config
         .harnesses
         .iter()
-        .map(|harness| (harness, harness.backend(&config, args.team)))
+        .map(|harness| (harness, harness.backend(&config, args.team, args.binary.as_deref())))
         .find(|(_, backend)| backend.is_installed())
         .unwrap_or_else(|| fail(format!("None of the configured harnesses are installed: {:?}", config.harnesses)));
     log::debug!("Using harness: {:?}", harness);

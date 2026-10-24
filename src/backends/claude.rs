@@ -2,6 +2,7 @@ use super::Backend;
 use std::path::Path;
 
 pub struct Claude {
+    pub binary: String,
     pub remote_control: bool,
     pub agent_teams: bool,
 }
@@ -49,9 +50,10 @@ impl Backend for Claude {
             true => format!("--permission-mode auto --remote-control '{}'", session),
             false => "--permission-mode auto".to_string(),
         };
+        let binary = super::shell_quote(&self.binary);
         match prompt {
-            Some(prompt) => format!("claude {flags} {}", super::shell_quote(prompt)),
-            None => format!("claude -c {flags} || claude {flags}"),
+            Some(prompt) => format!("{binary} {flags} {}", super::shell_quote(prompt)),
+            None => format!("{binary} -c {flags} || {binary} {flags}"),
         }
     }
 }
